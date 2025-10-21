@@ -1,0 +1,59 @@
+# ====================================
+# SEEG-AI - Configuration Template
+# ====================================
+# Copiez ce fichier vers .env et remplissez les valeurs
+
+# ====================================
+# Azure Document Intelligence
+# ====================================
+# Créer la ressource: https://portal.azure.com
+# Type: Cognitive Services - Document Intelligence (Form Recognizer)
+AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=https://YOUR_RESOURCE.cognitiveservices.azure.com/
+AZURE_DOCUMENT_INTELLIGENCE_KEY=votre_cle_azure_32_caracteres
+
+# ====================================
+# Supabase
+# ====================================
+# URL fournie
+SUPABASE_URL=https://fyiitzndlqcnyluwkpqp.supabase.co
+
+# Service Role Key (fournie)
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5aWl0em5kbHFjbnlsdXdrcHFwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTUwOTE1OSwiZXhwIjoyMDcxMDg1MTU5fQ.E3R7r2Rn_0rpCdmhKAjpWsNyenkR7p-lmKP3Pnr_X38
+
+# ====================================
+# MongoDB / Cosmos DB
+# ====================================
+
+# Pour DÉVELOPPEMENT LOCAL (avec Docker)
+MONGODB_CONNECTION_STRING=mongodb://Sevan:SevanSeeg2025@localhost:27017
+MONGODB_DATABASE=SEEG-AI
+MONGODB_COLLECTION=candidats
+
+# Pour PRODUCTION avec Azure Cosmos DB (décommenter et remplir)
+# MONGODB_CONNECTION_STRING=mongodb+srv://Sevan:<password>@seeg-ai.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000
+# MONGODB_USERNAME=Sevan
+# MONGODB_PASSWORD=votre_mot_de_passe_cosmos_db
+# MONGODB_DATABASE=seeg_candidatures
+# MONGODB_COLLECTION=candidats
+
+# ====================================
+# Application Settings
+# ====================================
+LOG_LEVEL=INFO
+DATA_FOLDER=./data
+TEMP_FOLDER=./temp
+
+# ====================================
+# API Settings
+# ====================================
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# ====================================
+# Notes:
+# ====================================
+# - Ne JAMAIS committer le fichier .env dans Git
+# - Garder ce template à jour si vous ajoutez des variables
+# - Pour Azure: utilisez Key Vault en production
+# - Pour Docker: les variables sont dans docker-compose.yml
+
