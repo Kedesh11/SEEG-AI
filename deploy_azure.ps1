@@ -190,21 +190,25 @@ if (-not $SkipDataMigration -and -not $OnlyConfig) {
                     docker cp seeg-mongodb:/tmp/candidats_export.json ./candidats_export.json 2>$null
                     
                     if (Test-Path "./candidats_export.json") {
-                        Write-Host "  Export reussi: candidats_export.json" -ForegroundColor Green
+                        Write-Host "  Export reussi: candidats_export.json`n" -ForegroundColor Green
                         
-                        Write-Host "  Import vers Cosmos DB..." -ForegroundColor Gray
-                        Write-Host "  Installez MongoDB Tools si pas deja fait:" -ForegroundColor Yellow
-                        Write-Host "     https://www.mongodb.com/try/download/database-tools`n" -ForegroundColor Gray
+                        # Utiliser le script Python robuste pour la migration
+                        Write-Host "  Lancement de la migration robuste vers Cosmos DB..." -ForegroundColor Gray
+                        Write-Host "  (Gestion automatique du throttling et des duplicata)`n" -ForegroundColor Gray
                         
-                        $doImport = Read-Host "  Executer l'import maintenant? (o/N)"
-                        if ($doImport -eq 'o' -or $doImport -eq 'O') {
-                            try {
-                                mongoimport --uri="$connectionString" --db SEEG-AI --collection candidats --file ./candidats_export.json
-                                Write-Host "  Import reussi vers Cosmos DB`n" -ForegroundColor Green
-                            } catch {
-                                Write-Host "  Import echoue. Commande manuelle:" -ForegroundColor Yellow
-                                Write-Host "  mongoimport --uri=`"$connectionString`" --db SEEG-AI --collection candidats --file ./candidats_export.json`n" -ForegroundColor Cyan
+                        try {
+                            python migrate_to_cosmos.py "$connectionString"
+                            
+                            if ($LASTEXITCODE -eq 0) {
+                                Write-Host "`n  Migration terminee avec succes!`n" -ForegroundColor Green
+                            } else {
+                                Write-Host "`n  Migration partielle - Vous pouvez relancer:" -ForegroundColor Yellow
+                                Write-Host "  python migrate_to_cosmos.py `"$connectionString`"`n" -ForegroundColor Cyan
                             }
+                        } catch {
+                            Write-Host "`n  Erreur lors de la migration" -ForegroundColor Yellow
+                            Write-Host "  Vous pouvez la relancer manuellement:" -ForegroundColor Gray
+                            Write-Host "  python migrate_to_cosmos.py `"$connectionString`"`n" -ForegroundColor Cyan
                         }
                     }
                 } else {

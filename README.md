@@ -473,6 +473,15 @@ az webapp restart --name seeg-ai-api --resource-group seeg-rg
 
 ### Migration des Données
 
+#### Système de Migration Robuste
+
+Le script `migrate_to_cosmos.py` gère automatiquement :
+- ✅ Throttling (429) avec retry automatique
+- ✅ Duplicata (E11000) ignorés automatiquement  
+- ✅ Reprise possible en cas d'interruption
+- ✅ Barre de progression en temps réel
+- ✅ Statistiques détaillées
+
 #### Depuis MongoDB Local vers Cosmos DB
 
 ```powershell
@@ -486,8 +495,32 @@ docker exec seeg-mongodb mongoexport `
 
 docker cp seeg-mongodb:/tmp/candidats_export.json ./candidats_export.json
 
-# 2. Import vers Cosmos DB (automatique via script Python)
-python complete_migration.py
+# 2. Migration robuste vers Cosmos DB
+# Récupérer la connection string
+$connStr = az cosmosdb keys list --name seeg-ai --resource-group seeg-rg --type connection-strings --query "connectionStrings[0].connectionString" --output tsv
+
+# Lancer la migration
+python migrate_to_cosmos.py "$connStr"
+
+# Ou utiliser .env
+python migrate_to_cosmos.py
+```
+
+#### Migration Automatique lors du Déploiement
+
+Le script `deploy_azure.ps1` propose automatiquement la migration et utilise le script robuste :
+
+```powershell
+.\deploy_azure.ps1
+# Répondre 'o' quand on vous demande de migrer les données
+```
+
+#### Relancer une Migration Échouée
+
+```powershell
+# Le script peut être relancé autant de fois que nécessaire
+# Il ignore automatiquement les documents déjà importés
+python migrate_to_cosmos.py "$connectionString"
 ```
 
 ---
