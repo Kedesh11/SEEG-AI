@@ -14,24 +14,23 @@ $APP_NAME = "seeg-ai-api"
 $RG = "seeg-rg"
 $LOCATION = "francecentral"
 
-Write-Host "🚀 Déploiement SEEG-AI sur Azure" -ForegroundColor Cyan
-Write-Host "================================" -ForegroundColor Cyan
-Write-Host ""
+Write-Host "`n================================" -ForegroundColor Cyan
+Write-Host "DEPLOIEMENT SEEG-AI SUR AZURE" -ForegroundColor Cyan
+Write-Host "================================`n" -ForegroundColor Cyan
 
 # Vérifier la connexion Azure
-Write-Host "🔐 Vérification de la connexion Azure..." -ForegroundColor Yellow
+Write-Host "Verification de la connexion Azure..." -ForegroundColor Yellow
 $account = az account show 2>$null | ConvertFrom-Json
 if (-not $account) {
-    Write-Host "❌ Non connecté à Azure. Connexion..." -ForegroundColor Red
+    Write-Host "Non connecte a Azure. Connexion..." -ForegroundColor Red
     az login
 }
 $account = az account show | ConvertFrom-Json
-Write-Host "✓ Connecté: $($account.user.name)" -ForegroundColor Green
-Write-Host "  Subscription: $($account.name)" -ForegroundColor Gray
-Write-Host ""
+Write-Host "Connecte: $($account.user.name)" -ForegroundColor Green
+Write-Host "  Subscription: $($account.name)`n" -ForegroundColor Gray
 
 # 1. Récupérer la connection string Cosmos DB
-Write-Host "1️⃣  Récupération Connection String Cosmos DB..." -ForegroundColor Yellow
+Write-Host "ETAPE 1: Recuperation Connection String Cosmos DB..." -ForegroundColor Yellow
 try {
     $cosmosKeys = az cosmosdb keys list `
         --name seeg-ai `
@@ -40,40 +39,37 @@ try {
         --output json | ConvertFrom-Json
     
     $connectionString = $cosmosKeys.connectionStrings[0].connectionString
-    Write-Host "✓ Connection String récupérée" -ForegroundColor Green
+    Write-Host "Connection String recuperee`n" -ForegroundColor Green
 } catch {
-    Write-Host "⚠ Impossible de récupérer la connection string" -ForegroundColor Yellow
-    Write-Host "  Utilisation de MongoDB local pour le test" -ForegroundColor Gray
+    Write-Host "Impossible de recuperer la connection string" -ForegroundColor Yellow
+    Write-Host "  Utilisation de MongoDB local pour le test`n" -ForegroundColor Gray
     $connectionString = "mongodb://Sevan:SevanSeeg2025@localhost:27017"
 }
-Write-Host ""
 
 if ($OnlyConfig) {
-    Write-Host "⚙️  Mode configuration uniquement (OnlyConfig)" -ForegroundColor Cyan
-    Write-Host ""
+    Write-Host "Mode configuration uniquement (OnlyConfig)`n" -ForegroundColor Cyan
 } else {
     # 2. Container Registry
-    Write-Host "2️⃣  Vérification Container Registry..." -ForegroundColor Yellow
+    Write-Host "ETAPE 2: Verification Container Registry..." -ForegroundColor Yellow
     $acrExists = az acr show --name $ACR_NAME --resource-group $RG 2>$null
     
     if (-not $acrExists) {
-        Write-Host "  Création du Container Registry..." -ForegroundColor Yellow
+        Write-Host "  Creation du Container Registry..." -ForegroundColor Yellow
         az acr create `
             --resource-group $RG `
             --name $ACR_NAME `
             --sku Basic `
             --admin-enabled true `
             --location $LOCATION
-        Write-Host "✓ Container Registry créé" -ForegroundColor Green
+        Write-Host "Container Registry cree`n" -ForegroundColor Green
     } else {
-        Write-Host "✓ Container Registry existe déjà" -ForegroundColor Green
+        Write-Host "Container Registry existe deja`n" -ForegroundColor Green
     }
-    Write-Host ""
     
     # 3. Build et Push l'image
     if (-not $SkipBuild) {
-        Write-Host "3️⃣  Build de l'image Docker..." -ForegroundColor Yellow
-        Write-Host "  Cela peut prendre 5-10 minutes..." -ForegroundColor Gray
+        Write-Host "ETAPE 3: Build de l'image Docker..." -ForegroundColor Yellow
+        Write-Host "  Cela peut prendre 5-10 minutes...`n" -ForegroundColor Gray
         
         az acr build `
             --registry $ACR_NAME `
@@ -82,19 +78,18 @@ if ($OnlyConfig) {
             .
         
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ Image buildée et pushée" -ForegroundColor Green
+            Write-Host "`nImage buildee et pushee`n" -ForegroundColor Green
         } else {
-            Write-Host "❌ Erreur lors du build" -ForegroundColor Red
+            Write-Host "`nErreur lors du build`n" -ForegroundColor Red
             exit 1
         }
     } else {
-        Write-Host "3️⃣  Build ignoré (--SkipBuild)" -ForegroundColor Gray
+        Write-Host "ETAPE 3: Build ignore (SkipBuild)`n" -ForegroundColor Gray
     }
-    Write-Host ""
 }
 
 # 4. Créer/Mettre à jour l'App Service
-Write-Host "4️⃣  Configuration App Service..." -ForegroundColor Yellow
+Write-Host "ETAPE 4: Configuration App Service..." -ForegroundColor Yellow
 
 $acrServer = az acr show --name $ACR_NAME --query loginServer --output tsv
 $acrUser = az acr credential show --name $ACR_NAME --query username --output tsv
@@ -104,7 +99,7 @@ $acrPass = az acr credential show --name $ACR_NAME --query "passwords[0].value" 
 $appExists = az webapp show --name $APP_NAME --resource-group $RG 2>$null
 
 if (-not $appExists) {
-    Write-Host "  Création de l'App Service Plan..." -ForegroundColor Yellow
+    Write-Host "  Creation de l'App Service Plan..." -ForegroundColor Yellow
     
     # Créer le plan
     az appservice plan create `
@@ -114,7 +109,7 @@ if (-not $appExists) {
         --sku B1 `
         --location $LOCATION
     
-    Write-Host "  Création de l'App Service..." -ForegroundColor Yellow
+    Write-Host "  Creation de l'App Service..." -ForegroundColor Yellow
     
     # Créer l'app
     az webapp create `
@@ -132,14 +127,13 @@ if (-not $appExists) {
         --docker-registry-server-user $acrUser `
         --docker-registry-server-password $acrPass
     
-    Write-Host "✓ App Service créée" -ForegroundColor Green
+    Write-Host "App Service creee`n" -ForegroundColor Green
 } else {
-    Write-Host "✓ App Service existe déjà" -ForegroundColor Green
+    Write-Host "App Service existe deja`n" -ForegroundColor Green
 }
-Write-Host ""
 
 # 5. Configurer les variables d'environnement
-Write-Host "5️⃣  Configuration des variables d'environnement..." -ForegroundColor Yellow
+Write-Host "ETAPE 5: Configuration des variables d'environnement..." -ForegroundColor Yellow
 
 az webapp config appsettings set `
     --resource-group $RG `
@@ -154,97 +148,85 @@ az webapp config appsettings set `
         MONGODB_DATABASE="SEEG-AI" `
         MONGODB_COLLECTION="candidats" `
         LOG_LEVEL="INFO" `
-        WEBSITES_PORT="8000"
+        WEBSITES_PORT="8000" | Out-Null
 
-Write-Host "✓ Variables configurées" -ForegroundColor Green
-Write-Host ""
+Write-Host "Variables configurees`n" -ForegroundColor Green
 
 # 6. Redémarrer
 if (-not $OnlyConfig) {
-    Write-Host "6️⃣  Redémarrage de l'application..." -ForegroundColor Yellow
-    az webapp restart --name $APP_NAME --resource-group $RG
-    Write-Host "✓ Application redémarrée" -ForegroundColor Green
-    Write-Host ""
+    Write-Host "ETAPE 6: Redemarrage de l'application..." -ForegroundColor Yellow
+    az webapp restart --name $APP_NAME --resource-group $RG | Out-Null
+    Write-Host "Application redemarree`n" -ForegroundColor Green
 }
 
-# 7. Migration des données (si MongoDB local contient des données)
+# 7. Migration des données
 if (-not $SkipDataMigration -and -not $OnlyConfig) {
-    Write-Host "7️⃣  Migration des données vers Cosmos DB..." -ForegroundColor Yellow
+    Write-Host "ETAPE 7: Migration des donnees vers Cosmos DB..." -ForegroundColor Yellow
     
-    # Vérifier si MongoDB local est en cours d'exécution
     $mongoContainer = docker ps --filter "name=seeg-mongodb" --format "{{.Names}}" 2>$null
     
     if ($mongoContainer) {
-        Write-Host "  MongoDB local détecté" -ForegroundColor Gray
+        Write-Host "  MongoDB local detecte" -ForegroundColor Gray
         
-        # Vérifier s'il y a des données
         try {
             $count = docker exec seeg-mongodb mongosh -u Sevan -p "SevanSeeg2025" --authenticationDatabase admin SEEG-AI --quiet --eval "db.candidats.countDocuments({})" 2>$null
             $count = $count -replace '\D', ''
             
             if ($count -and [int]$count -gt 0) {
-                Write-Host "  📊 $count candidatures trouvées dans MongoDB local" -ForegroundColor Cyan
+                Write-Host "  $count candidature(s) trouvee(s) dans MongoDB local" -ForegroundColor Cyan
                 
-                $migrate = Read-Host "  Voulez-vous migrer ces données vers Cosmos DB? (o/N)"
+                $migrate = Read-Host "  Voulez-vous migrer ces donnees vers Cosmos DB? (o/N)"
                 
                 if ($migrate -eq 'o' -or $migrate -eq 'O') {
-                    Write-Host "  Export des données..." -ForegroundColor Gray
+                    Write-Host "  Export des donnees..." -ForegroundColor Gray
                     
-                    # Export
                     docker exec seeg-mongodb mongoexport `
                         -u Sevan -p "SevanSeeg2025" `
                         --authenticationDatabase admin `
                         --db SEEG-AI `
                         --collection candidats `
-                        --out /tmp/candidats_export.json 2>$null
+                        --out /tmp/candidats_export.json 2>$null | Out-Null
                     
-                    # Copier vers l'hôte
                     docker cp seeg-mongodb:/tmp/candidats_export.json ./candidats_export.json 2>$null
                     
                     if (Test-Path "./candidats_export.json") {
-                        Write-Host "  ✓ Export réussi: candidats_export.json" -ForegroundColor Green
+                        Write-Host "  Export reussi: candidats_export.json" -ForegroundColor Green
                         
-                        # Import vers Cosmos DB
                         Write-Host "  Import vers Cosmos DB..." -ForegroundColor Gray
-                        Write-Host "  ⚠️  Installez MongoDB Tools si pas déjà fait:" -ForegroundColor Yellow
-                        Write-Host "     https://www.mongodb.com/try/download/database-tools" -ForegroundColor Gray
-                        Write-Host ""
-                        Write-Host "  Commande pour importer:" -ForegroundColor White
-                        Write-Host "  mongoimport --uri=`"$connectionString`" --db SEEG-AI --collection candidats --file ./candidats_export.json" -ForegroundColor Cyan
-                        Write-Host ""
+                        Write-Host "  Installez MongoDB Tools si pas deja fait:" -ForegroundColor Yellow
+                        Write-Host "     https://www.mongodb.com/try/download/database-tools`n" -ForegroundColor Gray
                         
-                        $doImport = Read-Host "  Exécuter l'import maintenant? (o/N)"
+                        $doImport = Read-Host "  Executer l'import maintenant? (o/N)"
                         if ($doImport -eq 'o' -or $doImport -eq 'O') {
                             try {
                                 mongoimport --uri="$connectionString" --db SEEG-AI --collection candidats --file ./candidats_export.json
-                                Write-Host "  ✓ Import réussi vers Cosmos DB" -ForegroundColor Green
+                                Write-Host "  Import reussi vers Cosmos DB`n" -ForegroundColor Green
                             } catch {
-                                Write-Host "  ⚠️  Import échoué. Utilisez la commande ci-dessus manuellement" -ForegroundColor Yellow
+                                Write-Host "  Import echoue. Commande manuelle:" -ForegroundColor Yellow
+                                Write-Host "  mongoimport --uri=`"$connectionString`" --db SEEG-AI --collection candidats --file ./candidats_export.json`n" -ForegroundColor Cyan
                             }
                         }
                     }
                 } else {
-                    Write-Host "  Migration ignorée" -ForegroundColor Gray
+                    Write-Host "  Migration ignoree`n" -ForegroundColor Gray
                 }
             } else {
-                Write-Host "  Aucune donnée à migrer" -ForegroundColor Gray
+                Write-Host "  Aucune donnee a migrer`n" -ForegroundColor Gray
             }
         } catch {
-            Write-Host "  Impossible de vérifier les données locales" -ForegroundColor Yellow
+            Write-Host "  Impossible de verifier les donnees locales`n" -ForegroundColor Yellow
         }
     } else {
-        Write-Host "  MongoDB local non détecté (ignoré)" -ForegroundColor Gray
+        Write-Host "  MongoDB local non detecte (ignore)`n" -ForegroundColor Gray
     }
-    Write-Host ""
 } elseif ($SkipDataMigration) {
-    Write-Host "7️⃣  Migration des données ignorée (--SkipDataMigration)" -ForegroundColor Gray
-    Write-Host ""
+    Write-Host "ETAPE 7: Migration des donnees ignoree (SkipDataMigration)`n" -ForegroundColor Gray
 }
 
 # 8. Tests de vérification
 if (-not $SkipTests -and -not $OnlyConfig) {
-    Write-Host "8️⃣  Vérification du déploiement..." -ForegroundColor Yellow
-    Write-Host "  Attente du démarrage de l'application (30 secondes)..." -ForegroundColor Gray
+    Write-Host "ETAPE 8: Verification du deploiement..." -ForegroundColor Yellow
+    Write-Host "  Attente du demarrage de l'application (30 secondes)..." -ForegroundColor Gray
     Start-Sleep -Seconds 30
     
     $API_URL = "https://$APP_NAME.azurewebsites.net"
@@ -255,14 +237,14 @@ if (-not $SkipTests -and -not $OnlyConfig) {
     try {
         $health = Invoke-RestMethod -Uri "$API_URL/health" -TimeoutSec 30 -ErrorAction Stop
         if ($health.status -eq "healthy") {
-            Write-Host "    ✓ Health check OK" -ForegroundColor Green
+            Write-Host "    Health check OK" -ForegroundColor Green
         } else {
-            Write-Host "    ❌ Health check failed" -ForegroundColor Red
+            Write-Host "    Health check failed" -ForegroundColor Red
             $allTestsPassed = $false
         }
     } catch {
-        Write-Host "    ❌ Health check inaccessible" -ForegroundColor Red
-        Write-Host "       L'application démarre peut-être encore..." -ForegroundColor Yellow
+        Write-Host "    Health check inaccessible" -ForegroundColor Red
+        Write-Host "       L'application demarre peut-etre encore..." -ForegroundColor Yellow
         $allTestsPassed = $false
     }
     
@@ -271,10 +253,10 @@ if (-not $SkipTests -and -not $OnlyConfig) {
     try {
         $root = Invoke-RestMethod -Uri "$API_URL/" -TimeoutSec 30 -ErrorAction Stop
         if ($root.message) {
-            Write-Host "    ✓ Endpoint racine OK" -ForegroundColor Green
+            Write-Host "    Endpoint racine OK" -ForegroundColor Green
         }
     } catch {
-        Write-Host "    ❌ Endpoint racine inaccessible" -ForegroundColor Red
+        Write-Host "    Endpoint racine inaccessible" -ForegroundColor Red
         $allTestsPassed = $false
     }
     
@@ -283,48 +265,43 @@ if (-not $SkipTests -and -not $OnlyConfig) {
     try {
         $candidats = Invoke-RestMethod -Uri "$API_URL/candidatures" -TimeoutSec 30 -ErrorAction Stop
         $count = if ($candidats) { $candidats.Count } else { 0 }
-        Write-Host "    ✓ Endpoint candidatures OK ($count candidatures)" -ForegroundColor Green
+        Write-Host "    Endpoint candidatures OK ($count candidatures)`n" -ForegroundColor Green
     } catch {
-        Write-Host "    ⚠️  Endpoint candidatures accessible mais vide" -ForegroundColor Yellow
+        Write-Host "    Endpoint candidatures accessible mais vide`n" -ForegroundColor Yellow
     }
     
-    Write-Host ""
     if ($allTestsPassed) {
-        Write-Host "  ✅ Tous les tests sont passés!" -ForegroundColor Green
+        Write-Host "  Tous les tests sont passes!`n" -ForegroundColor Green
     } else {
-        Write-Host "  ⚠️  Certains tests ont échoué. Vérifiez les logs:" -ForegroundColor Yellow
-        Write-Host "     az webapp log tail --name $APP_NAME --resource-group $RG" -ForegroundColor Gray
+        Write-Host "  Certains tests ont echoue. Verifiez les logs:" -ForegroundColor Yellow
+        Write-Host "     az webapp log tail --name $APP_NAME --resource-group $RG`n" -ForegroundColor Gray
     }
-    Write-Host ""
 } elseif ($SkipTests) {
-    Write-Host "8️⃣  Tests ignorés (--SkipTests)" -ForegroundColor Gray
-    Write-Host ""
+    Write-Host "ETAPE 8: Tests ignores (SkipTests)`n" -ForegroundColor Gray
 }
 
 # 9. Résumé Final
 Write-Host "================================" -ForegroundColor Cyan
-Write-Host "✅ DÉPLOIEMENT TERMINÉ !" -ForegroundColor Green
-Write-Host "================================" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "🌐 API accessible sur:" -ForegroundColor White
-Write-Host "  https://$APP_NAME.azurewebsites.net" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "📡 Endpoints disponibles:" -ForegroundColor White
+Write-Host "DEPLOIEMENT TERMINE !" -ForegroundColor Green
+Write-Host "================================`n" -ForegroundColor Cyan
+
+Write-Host "API accessible sur:" -ForegroundColor White
+Write-Host "  https://$APP_NAME.azurewebsites.net`n" -ForegroundColor Cyan
+
+Write-Host "Endpoints disponibles:" -ForegroundColor White
 Write-Host "  Health:       https://$APP_NAME.azurewebsites.net/health" -ForegroundColor Gray
 Write-Host "  Docs:         https://$APP_NAME.azurewebsites.net/docs" -ForegroundColor Gray
 Write-Host "  Candidatures: https://$APP_NAME.azurewebsites.net/candidatures" -ForegroundColor Gray
-Write-Host "  Recherche:    https://$APP_NAME.azurewebsites.net/candidatures/search" -ForegroundColor Gray
-Write-Host ""
-Write-Host "🔍 Commandes utiles:" -ForegroundColor White
-Write-Host "  Voir les logs:    az webapp log tail --name $APP_NAME --resource-group $RG" -ForegroundColor Gray
-Write-Host "  Redémarrer:       az webapp restart --name $APP_NAME --resource-group $RG" -ForegroundColor Gray
-Write-Host "  Voir le statut:   az webapp show --name $APP_NAME --resource-group $RG --query state" -ForegroundColor Gray
-Write-Host ""
-Write-Host "📊 Prochaines étapes:" -ForegroundColor White
-Write-Host "  1. Vérifier l'API: curl https://$APP_NAME.azurewebsites.net/health" -ForegroundColor Gray
-Write-Host "  2. Traiter les candidats: python main.py (avec Cosmos DB configuré)" -ForegroundColor Gray
-Write-Host "  3. Consulter les docs: https://$APP_NAME.azurewebsites.net/docs" -ForegroundColor Gray
-Write-Host ""
-Write-Host "⏱️  L'application peut prendre 1-2 minutes pour démarrer complètement" -ForegroundColor Yellow
-Write-Host ""
+Write-Host "  Recherche:    https://$APP_NAME.azurewebsites.net/candidatures/search`n" -ForegroundColor Gray
 
+Write-Host "Commandes utiles:" -ForegroundColor White
+Write-Host "  Voir les logs:    az webapp log tail --name $APP_NAME --resource-group $RG" -ForegroundColor Gray
+Write-Host "  Redemarrer:       az webapp restart --name $APP_NAME --resource-group $RG" -ForegroundColor Gray
+Write-Host "  Voir le statut:   az webapp show --name $APP_NAME --resource-group $RG --query state`n" -ForegroundColor Gray
+
+Write-Host "Prochaines etapes:" -ForegroundColor White
+Write-Host "  1. Verifier l'API: curl https://$APP_NAME.azurewebsites.net/health" -ForegroundColor Gray
+Write-Host "  2. Traiter les candidats: python main.py (avec Cosmos DB configure)" -ForegroundColor Gray
+Write-Host "  3. Consulter les docs: https://$APP_NAME.azurewebsites.net/docs`n" -ForegroundColor Gray
+
+Write-Host "L'application peut prendre 1-2 minutes pour demarrer completement`n" -ForegroundColor Yellow
