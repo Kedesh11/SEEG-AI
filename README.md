@@ -804,6 +804,388 @@ SEEG-AI/
 
 ---
 
+## 📖 Guide Complet des Commandes
+
+### 🔧 Configuration et Installation
+
+```powershell
+# Créer environnement virtuel
+python -m venv env
+
+# Activer environnement (Windows)
+.\env\Scripts\Activate.ps1
+
+# Activer environnement (Linux/Mac)
+source env/bin/activate
+
+# Installer dépendances
+pip install -r requirements.txt
+
+# Vérifier installation
+python scripts/check_setup.py
+```
+
+---
+
+### 🐳 Docker et MongoDB
+
+```powershell
+# Démarrer tous les services
+docker-compose up -d
+
+# Démarrer MongoDB uniquement
+docker-compose up -d mongodb
+
+# Démarrer MongoDB + Mongo Express
+docker-compose up -d mongodb mongo-express
+
+# Arrêter tous les services
+docker-compose down
+
+# Arrêter et supprimer volumes (⚠️ Supprime les données)
+docker-compose down -v
+
+# Voir les logs
+docker-compose logs -f mongodb
+
+# Statut des containers
+docker ps
+
+# Statistiques MongoDB
+.\scripts\mongodb_stats.ps1
+
+# CLI MongoDB
+docker exec -it seeg-mongodb mongosh -u Sevan -p "SevanSeeg2025" --authenticationDatabase admin SEEG-AI
+
+# Backup MongoDB
+.\scripts\mongodb_backup.ps1
+
+# Compter les documents
+docker exec seeg-mongodb mongosh -u Sevan -p "SevanSeeg2025" --authenticationDatabase admin SEEG-AI --quiet --eval "db.candidats.countDocuments({})"
+```
+
+---
+
+### 🚀 Traitement et API Locale
+
+```powershell
+# Tester un candidat
+python test_one_candidate.py
+
+# Traiter tous les candidats (MongoDB local)
+python main.py
+
+# Lancer l'API locale
+python run_api.py
+# API disponible sur http://localhost:8000
+
+# Lancer en mode dev (auto-reload)
+uvicorn src.api.app:app --reload --port 8000
+```
+
+---
+
+### 🧪 Tests
+
+```powershell
+# Tous les tests
+pytest
+
+# Tests avec couverture
+pytest --cov=src --cov-report=html
+
+# Tests spécifiques
+pytest tests/test_models.py
+pytest tests/test_mongodb.py
+pytest tests/test_ocr.py
+pytest tests/test_api.py
+
+# Tests verbeux
+pytest -v
+
+# Test API complet (PowerShell)
+.\TEST_API_ROUTES.ps1
+
+# Test API (Linux/Mac)
+.\scripts\test_api.sh
+```
+
+---
+
+### ☁️ Azure - Déploiement
+
+```powershell
+# Connexion Azure
+az login
+az account set --subscription e44aff73-4ec5-4cf2-ad58-f8b24492970a
+
+# Déploiement complet
+.\deploy_azure.ps1
+
+# Déploiement sans rebuild Docker
+.\deploy_azure.ps1 -SkipBuild
+
+# Configuration uniquement
+.\deploy_azure.ps1 -OnlyConfig
+
+# Sans migration données
+.\deploy_azure.ps1 -SkipDataMigration
+
+# Sans tests
+.\deploy_azure.ps1 -SkipTests
+
+# Redéploiement rapide (config + tests, pas de build)
+.\deploy_azure.ps1 -SkipBuild -SkipDataMigration
+```
+
+---
+
+### 🗄️ Azure - Cosmos DB
+
+```powershell
+# Récupérer connection string
+az cosmosdb keys list --name seeg-ai --resource-group seeg-rg --type connection-strings --query "connectionStrings[0].connectionString" --output tsv
+
+# Récupérer les clés
+az cosmosdb keys list --name seeg-ai --resource-group seeg-rg
+
+# Régénérer clé primaire
+az cosmosdb keys regenerate --name seeg-ai --resource-group seeg-rg --key-kind primary
+
+# Voir les détails
+az cosmosdb show --name seeg-ai --resource-group seeg-rg
+
+# Lister les bases de données
+az cosmosdb mongodb database list --account-name seeg-ai --resource-group seeg-rg
+
+# Voir les métriques
+az monitor metrics list --resource /subscriptions/.../seeg-ai --metric-names TotalRequests
+```
+
+---
+
+### 📦 Azure - App Service
+
+```powershell
+# Voir les logs en temps réel
+az webapp log tail --name seeg-ai-api --resource-group seeg-rg
+
+# Télécharger les logs
+az webapp log download --name seeg-ai-api --resource-group seeg-rg --log-file logs.zip
+
+# Redémarrer l'application
+az webapp restart --name seeg-ai-api --resource-group seeg-rg
+
+# Arrêter l'application
+az webapp stop --name seeg-ai-api --resource-group seeg-rg
+
+# Démarrer l'application
+az webapp start --name seeg-ai-api --resource-group seeg-rg
+
+# Voir le statut
+az webapp show --name seeg-ai-api --resource-group seeg-rg --query state --output tsv
+
+# Voir toutes les infos
+az webapp show --name seeg-ai-api --resource-group seeg-rg
+
+# Voir les variables d'environnement
+az webapp config appsettings list --name seeg-ai-api --resource-group seeg-rg
+
+# Mettre à jour une variable
+az webapp config appsettings set --name seeg-ai-api --resource-group seeg-rg --settings LOG_LEVEL=DEBUG
+
+# Voir l'URL
+az webapp show --name seeg-ai-api --resource-group seeg-rg --query defaultHostName --output tsv
+```
+
+---
+
+### 🐋 Azure - Container Registry
+
+```powershell
+# Lister les images
+az acr repository list --name seegregistry --output table
+
+# Lister les tags
+az acr repository show-tags --name seegregistry --repository seeg-api --output table
+
+# Build et push nouvelle image
+az acr build --registry seegregistry --image seeg-api:latest --file Dockerfile .
+
+# Build avec tag spécifique
+az acr build --registry seegregistry --image seeg-api:v1.0.0 --file Dockerfile .
+
+# Supprimer une image
+az acr repository delete --name seegregistry --image seeg-api:old-tag
+
+# Voir les credentials
+az acr credential show --name seegregistry
+```
+
+---
+
+### 🔄 Migration de Données
+
+```powershell
+# Export MongoDB local
+docker exec seeg-mongodb mongoexport -u Sevan -p "SevanSeeg2025" --authenticationDatabase admin --db SEEG-AI --collection candidats --out /tmp/candidats_export.json
+docker cp seeg-mongodb:/tmp/candidats_export.json ./candidats_export.json
+
+# Migration robuste vers Cosmos DB (avec connection string)
+$connStr = az cosmosdb keys list --name seeg-ai --resource-group seeg-rg --type connection-strings --query "connectionStrings[0].connectionString" --output tsv
+python migrate_to_cosmos.py "$connStr"
+
+# Migration avec fichier .env
+python migrate_to_cosmos.py
+
+# Migration avec fichier personnalisé
+python migrate_to_cosmos.py "$connStr" mon_export.json
+
+# Vérifier l'état de Cosmos DB
+python -c "from pymongo import MongoClient; client = MongoClient('VOTRE_CONN_STRING'); print(f'Total: {client[\"SEEG-AI\"][\"candidats\"].count_documents({})} documents')"
+```
+
+---
+
+### 🌐 Test de l'API
+
+```powershell
+# API Production
+$API = "https://seeg-ai-api.azurewebsites.net"
+
+# API Locale
+# $API = "http://localhost:8000"
+
+# Health check
+curl "$API/health"
+Invoke-RestMethod -Uri "$API/health"
+
+# Info API
+curl "$API/"
+Invoke-RestMethod -Uri "$API/"
+
+# Liste des candidatures
+curl "$API/candidatures"
+$candidats = Invoke-RestMethod -Uri "$API/candidatures"
+$candidats.Count
+
+# Recherche par nom
+curl "$API/candidatures/search?last_name=NDZANGA"
+Invoke-RestMethod -Uri "$API/candidatures/search?last_name=NDZANGA"
+
+# Recherche par prénom
+curl "$API/candidatures/search?first_name=Eric"
+Invoke-RestMethod -Uri "$API/candidatures/search?first_name=Eric"
+
+# Recherche par email
+curl "$API/candidatures/search?email=example@email.com"
+Invoke-RestMethod -Uri "$API/candidatures/search?email=example@email.com"
+
+# Documentation Swagger
+Start-Process "$API/docs"
+```
+
+---
+
+### 🔍 Azure - Document Intelligence
+
+```powershell
+# Lister les ressources Cognitive Services
+az cognitiveservices account list --resource-group seeg-rg --output table
+
+# Voir les détails
+az cognitiveservices account show --name seeg-document-intelligence --resource-group seeg-rg
+
+# Récupérer les clés
+az cognitiveservices account keys list --name seeg-document-intelligence --resource-group seeg-rg
+
+# Régénérer une clé
+az cognitiveservices account keys regenerate --name seeg-document-intelligence --resource-group seeg-rg --key-name key1
+
+# Voir l'endpoint
+az cognitiveservices account show --name seeg-document-intelligence --resource-group seeg-rg --query properties.endpoint --output tsv
+```
+
+---
+
+### 🛠️ Maintenance et Debug
+
+```powershell
+# Nettoyer les containers Docker
+docker system prune -a
+
+# Nettoyer Python
+find . -type d -name "__pycache__" -exec rm -r {} +
+find . -type f -name "*.pyc" -delete
+
+# Réinstaller dépendances
+pip install --force-reinstall -r requirements.txt
+
+# Mettre à jour pip
+python -m pip install --upgrade pip
+
+# Vérifier les versions
+python --version
+docker --version
+az --version
+
+# Variables d'environnement (debug)
+python -c "from src.config import settings; print(settings.mongodb_connection_string)"
+
+# Test connexion MongoDB
+python -c "from pymongo import MongoClient; client = MongoClient('mongodb://Sevan:SevanSeeg2025@localhost:27017'); print('✓ MongoDB OK'); print(f'DB: {client.list_database_names()}')"
+
+# Test connexion Cosmos DB
+python -c "from pymongo import MongoClient; client = MongoClient('VOTRE_CONN_STRING'); print('✓ Cosmos DB OK'); print(f'Collections: {client[\"SEEG-AI\"].list_collection_names()}')"
+```
+
+---
+
+### 📊 Monitoring Azure
+
+```powershell
+# Voir toutes les ressources du groupe
+az resource list --resource-group seeg-rg --output table
+
+# Métriques App Service (CPU)
+az monitor metrics list --resource /subscriptions/e44aff73-4ec5-4cf2-ad58-f8b24492970a/resourceGroups/seeg-rg/providers/Microsoft.Web/sites/seeg-ai-api --metric-names CpuPercentage
+
+# Métriques Cosmos DB (RU/s)
+az monitor metrics list --resource /subscriptions/e44aff73-4ec5-4cf2-ad58-f8b24492970a/resourceGroups/seeg-rg/providers/Microsoft.DocumentDB/databaseAccounts/seeg-ai --metric-names TotalRequests
+
+# Coûts estimés
+az consumption usage list --output table
+
+# Alertes
+az monitor alert list --resource-group seeg-rg --output table
+```
+
+---
+
+### 🗑️ Nettoyage
+
+```powershell
+# Supprimer candidats_export.json
+Remove-Item candidats_export.json
+
+# Supprimer fichiers temporaires
+Remove-Item -Recurse -Force __pycache__
+Remove-Item -Recurse -Force .pytest_cache
+Remove-Item -Recurse -Force htmlcov
+
+# Supprimer logs
+Remove-Item -Recurse -Force logs
+
+# Nettoyer Docker
+docker-compose down -v
+docker system prune -a -f
+
+# Désactiver environnement virtuel
+deactivate
+```
+
+---
+
 ## 📞 Support
 
 ### Liens Utiles
@@ -813,20 +1195,23 @@ SEEG-AI/
 - **Portail Azure** : https://portal.azure.com
 - **Azure CLI Docs** : https://docs.microsoft.com/cli/azure/
 
-### Commandes Rapides
+### Commandes les Plus Utilisées
 
-```bash
-# Statut de l'API
-curl https://seeg-ai-api.azurewebsites.net/health
+```powershell
+# Développement local
+docker-compose up -d                    # Démarrer MongoDB
+python run_api.py                       # Lancer API locale
+pytest                                  # Tests
 
-# Logs Azure
-az webapp log tail --name seeg-ai-api --resource-group seeg-rg
+# Déploiement
+.\deploy_azure.ps1                      # Déploiement complet
 
-# Statistiques MongoDB
-.\scripts\mongodb_stats.ps1
+# Monitoring
+az webapp log tail --name seeg-ai-api --resource-group seeg-rg  # Logs
+curl https://seeg-ai-api.azurewebsites.net/health              # Status
 
-# Tests complets
-pytest
+# Migration
+python migrate_to_cosmos.py "$connStr"  # Migrer données
 ```
 
 ---
