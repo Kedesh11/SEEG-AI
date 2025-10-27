@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     
     # MongoDB / Cosmos DB
     mongodb_connection_string: str = "mongodb://Sevan:SevanSeeg2025@localhost:27017"
+    cosmos_connection_string: Optional[str] = None  # Alias pour COSMOS_CONNECTION_STRING
     mongodb_database: str = "SEEG-AI"
     mongodb_collection: str = "candidats"
     mongodb_username: Optional[str] = None

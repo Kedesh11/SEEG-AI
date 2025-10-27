@@ -64,7 +64,17 @@ async def migrate_direct_to_cosmos(cosmos_connection_string: str):
         
         # 4. Connexion aux services (Azure OCR, Supabase)
         logger.info("🔌 Connexion aux services Azure OCR et Supabase...")
-        await candidature_processor._connect_services()
+        # Initialiser seulement les services nécessaires (pas MongoDB local)
+        from src.services.supabase_client import supabase_client
+        from src.services.azure_ocr import azure_ocr_service
+        
+        # Connexion Supabase
+        supabase_client.connect()
+        
+        # Connexion Azure OCR
+        azure_ocr_service.connect()
+        
+        logger.info("✓ Services Azure OCR et Supabase configurés")
         logger.info("")
         
         # 5. Temporairement rediriger mongodb_client vers Cosmos DB
